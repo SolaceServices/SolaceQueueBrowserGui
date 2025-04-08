@@ -51,7 +51,7 @@ To obtain this information from a Solace Cloud based broker:
 2. Messaging creds: go to the Solace Cloud console, click on your broker, then click on "Connect". Open the "Solace Messaging" area. The creds are displayed there.  
 
 ## Running the tool
-> java -jar target/SolaceQueueBrowserGui-1.0.0-jar-with-dependencies.jar -c=<path to your config file>
+> java -jar target/SolaceQueueBrowserGui-1.0.0-jar-with-dependencies.jar -c=[path to your config file]
 
 ## Feedback?
 Send feature requests, defects and comments to (mailto:mike.obrien@solace.com)
