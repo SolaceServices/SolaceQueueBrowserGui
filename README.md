@@ -44,7 +44,7 @@ The tool currently supports a connection to a single broker. The broker URL and 
 	}
 }
 ```
-Note that this tool requires both admin credentials and message client credentials. It requires the admin credentials to use the SEMP api to pull a list of queues on the broker. Themessaging interface is then used to browse a selected queue. 
+Note that this tool requires both admin credentials and message client credentials. It requires the admin credentials to use the SEMP api to pull a list of queues on the broker. The messaging interface is then used to browse a selected queue. 
 
 To obtain this information from a Solace Cloud based broker:
 1. Admin creds: go to the Solace Cloud console, click on your broker, then click on "Manage" and open the "SEMP - REST API" section in the area below the tiles. 
