@@ -15,7 +15,7 @@ This tool is NOT a Solace supported product. It has been created by Solace's pro
 ## Building the tool
 The tool can be built with Maven, or with your favorite IDE. Dependant jarfiles are contained in the repo, so you just need to include all the jars in the lib folder in your classpatth.
 
-Clone teh repo:
+Clone the repo:
 > git clone <this repo>
 
 Compile and build jar:
