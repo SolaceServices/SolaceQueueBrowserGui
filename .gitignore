@@ -1,0 +1,14 @@
+.metadata/
+SolaceQueueBrowserGui/.settings/
+SolaceQueueBrowserGui/bin/
+SolaceQueueBrowserGui/.classpath
+SolaceQueueBrowserGui/.project
+SolaceQueueBrowserGui/config/myBrowserConfig.json
+SolaceQueueBrowserGui/target/SolaceQueueBrowserGui-1.0.0.jar
+SolaceQueueBrowserGui/target/archive-tmp/
+SolaceQueueBrowserGui/target/classes/
+SolaceQueueBrowserGui/target/generated-sources/
+SolaceQueueBrowserGui/target/maven-archiver/
+SolaceQueueBrowserGui/target/maven-status/
+SolaceQueueBrowserGui/logs/
+

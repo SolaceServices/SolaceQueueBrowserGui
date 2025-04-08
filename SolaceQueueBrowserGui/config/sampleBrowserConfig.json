@@ -1,0 +1,12 @@
+{
+	"eventBroker": {
+		"name": "A Logical Name for your Broker",
+		"sempHost": "https://mr-connection-REPLACEWITHYOURURL.messaging.solace.cloud:943/SEMP/v2/config",
+		"sempAdminUser": "mission-control-manager",
+		"sempAdminPw": "REPLACE-ME",
+		"msgVpnName": "replace-me",
+		"messagingHost": "tcps://mr-connection-REPLACEWITHYOURURL.messaging.solace.cloud:55443",
+		"messagingClientUsername": "solace-cloud-client",
+		"messagingPw" : "replace-me"
+	}
+}
