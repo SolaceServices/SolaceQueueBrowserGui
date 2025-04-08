@@ -25,10 +25,10 @@ The build script creates a self-contained executable fat jar.
 
 ## Runing without building
 
-The latest build is contained in the repo. Simply run the jar contained in the target folder, using the instriuctions for running below.
+The latest build is contained in the repo. Simply run the jar contained in the target folder, using the instructions for running below.
 
 ## Configuring the tool
-The tool currently supports a connectrion to asingle broker. The broker URL and credentials are defined in a json file that this tool read in at launch time. You pass this file into the tool when you run it. See the example config file in the config/sampleBrowserConfig.json, described below:
+The tool currently supports a connection to a single broker. The broker URL and credentials are defined in a json file that this tool read in at launch time. You pass this file into the tool when you run it. See the example config file in the config/sampleBrowserConfig.json, described below:
 
 ```json
 {
