@@ -1,4 +1,4 @@
-![Project Logo](./SolaceQueueBrowserGui/queueBrowserIcon.png "Queue Browser Logo")
+![Project Logo](./SolaceQueueBrowserGui/config/queueBrowserIcon.png "Queue Browser Logo")
 
 # SolaceQueueBrowserGui
 Desktop GUI for browsing Solace Queues
