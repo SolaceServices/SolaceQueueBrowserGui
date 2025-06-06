@@ -75,10 +75,12 @@ public class PaginatedCachingBrowser {
 		if (m != null) {
 			m.ackMessage();
 		}
-		this.allMessagesMap.remove(id);
-		
+		remove(id);
 	}
-	
+	public void remove(String id) {
+		this.allMessagesMap.remove(id);
+	}
+
 	public void prefetchNextPage() throws BrokerException {
 		int nCount = 0;
 		String logReport = " fetching a page of messages, ids=";

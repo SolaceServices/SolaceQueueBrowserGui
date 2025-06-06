@@ -1,9 +1,7 @@
 package com.solace.psg.brokers;
 
-import com.solace.psg.brokers.semp.SempV1LegacyClient;
 
 public class Broker {
-	public SempV1LegacyClient semp = null;
 	public String name;
 	public String sempHost = "";
 	public String sempAdminUser = "";
@@ -12,4 +10,11 @@ public class Broker {
 	public String messagingClientUsername = "";
 	public String messagingPw = "";
 	public String messagingHost;
+	
+	public String fqdn() {
+		String[]  parts = this.sempHost.split(":");
+		String rc = parts[1];
+		rc = rc.replaceAll("/", "");
+		return rc;
+	}
 }

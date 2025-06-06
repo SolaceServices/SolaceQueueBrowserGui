@@ -6,15 +6,19 @@ import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -24,20 +28,26 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.TransferHandler;
 import javax.swing.table.DefaultTableModel;
 
 import com.solace.psg.brokers.Broker;
 import com.solace.psg.brokers.BrokerException;
+import com.solace.psg.brokers.semp.SempClient;
 import com.solace.psg.brokers.semp.SempException;
 import com.solace.psg.queueBrowser.PaginatedCachingBrowser;
+import com.solace.psg.queueBrowser.gui.dragAndDrop.DroppableMessage;
+import com.solace.psg.queueBrowser.gui.dragAndDrop.IDragDropInstigator;
+import com.solace.psg.queueBrowser.gui.dragAndDrop.QueueMessageTransferInstigatorHandler;
 import com.solacesystems.jcsmp.BytesXMLMessage;
 import com.solacesystems.jcsmp.JCSMPException;
+import com.solacesystems.jcsmp.ReplicationGroupMessageId;
 
-public class BrowserDialog {
+public class BrowserDialog implements IDragDropInstigator {
 	private Broker broker;
 	private PaginatedCachingBrowser browser;
 	private String queue;
+	private String[] otherQueues;
 	private JFrame parentFrame;
 	private int nCurPage = 0;
 
@@ -46,25 +56,35 @@ public class BrowserDialog {
 	
 	private int estimatedPageCount = 0;
 
+	private DefaultTableModel tableModel; 
 	private JLabel topLabel;
 	private JTextArea textArea;
 	private JTable table;
 	private JButton nextMsgButton;
 	private JButton delButton;
 	private JButton prevMsgButton;
+	private JButton moveMessageMsgButton;
+	private JButton copyMessageMsgButton;
+	private JLabel statusLabel;
+	private JComboBox<String> comboBox;
 	JDialog dialog; 
 	private Semaphore semaphore = new Semaphore(1);
 	private int selectedRow;
 	private IconicTableCellRenderer iconCellRenderer;
 	private ImageIcon messageIcon;
-	
-	public BrowserDialog(Broker b, String queue, JFrame frame, int nEstimatedMessageCount) throws SempException {
+	private SempClient sempV2ActionClient;
+
+	public Point mousePressPoint;
+
+	public BrowserDialog(SempClient sempV2ActionClient, Broker b, String queue, JFrame frame, int nEstimatedMessageCount, String[] otherQueues) throws SempException {
 		this.queue = queue;
+		this.otherQueues = otherQueues;
 		this.parentFrame = frame;
 		this.broker = b;
 		this.estimatedPageCount = (nEstimatedMessageCount / nItemsPerPage) + 1;
 		this.iconCellRenderer = new IconicTableCellRenderer();
 		this.messageIcon = new ImageIcon("config/messageIcon32.png");
+		this.sempV2ActionClient = sempV2ActionClient;
 		this.initialize();
 	}
 
@@ -78,6 +98,7 @@ public class BrowserDialog {
 		dialog = new JDialog(parentFrame, "Solace Queue Browser - " + this.queue, true);
 		dialog.setSize(totalTableWidth, 1000);
 		dialog.setLayout(new BorderLayout());
+		dialog.setModal(false);
 
 		// this text area gos in the bottom pane, but need to define it up here so the
 		// mouse handler on thetable click sees it
@@ -96,11 +117,12 @@ public class BrowserDialog {
 		String[] columnNames = { "", "Message Id", "Size", "Redelivered?" };
 
 		// Create the table model
-		DefaultTableModel tableModel = new DefaultTableModel(data, columnNames);
+		tableModel = new DefaultTableModel(data, columnNames);
 
 		// Create the table with the table model
 		table = new JTable(tableModel);
 		table.setRowHeight(33);
+        table.setDragEnabled(true);
 
 		// Set a custom cell renderer to alternate row colors
 		table.setDefaultRenderer(Object.class, new AlternatingRowColorRenderer());
@@ -115,13 +137,16 @@ public class BrowserDialog {
 		// Enable gridlines
 		table.setShowGrid(true);
 		table.setGridColor(Color.BLACK);
-		table.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				int row = table.rowAtPoint(e.getPoint());
-				onSelectMessage(table, row);
-			}
-		});
+//		table.addMouseListener(new MouseAdapter() {
+//			@Override
+//			public void mouseClicked(MouseEvent e) {
+//				int row = table.rowAtPoint(e.getPoint());
+//				onSelectMessage(table, row);
+//			}
+//		});
+        table.addMouseListener(new TableMouseListener(table, this));
+        table.addMouseMotionListener(new TableMouseMotionListener(table));
+        table.setTransferHandler(new QueueMessageTransferInstigatorHandler(this, "source"));
 
 		JScrollPane listScrollPane = new JScrollPane(table);
 		listScrollPane.setPreferredSize(new Dimension(380, 400));
@@ -150,7 +175,7 @@ public class BrowserDialog {
 		delButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				onDeleteMessage(table, dialog, tableModel);
+				onDeleteMessage(table, dialog);
 			}
 		});
 
@@ -159,7 +184,7 @@ public class BrowserDialog {
 		nextMsgButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				onNextMessage(table);
+				onNextMessage();
 			}
 		});
 		prevMsgButton = new JButton("< Previous Message");
@@ -170,18 +195,46 @@ public class BrowserDialog {
 				onPreviousMessage(table);
 			}
 		});
+		copyMessageMsgButton = new JButton("Copy to Queue:");
+		copyMessageMsgButton.setEnabled(false);
+		copyMessageMsgButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				onCopyMessage();
+			}
+		});
+
+		moveMessageMsgButton = new JButton("Move to Queue:");
+		moveMessageMsgButton.setEnabled(false);
+		moveMessageMsgButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				onMoveMessage();
+			}
+		});
+        comboBox = new JComboBox<>(otherQueues);
+        Dimension preferredSize = comboBox.getPreferredSize();
+        preferredSize.width = 400;
+        comboBox.setPreferredSize(preferredSize);
+
 		
 		JPanel buttonLeftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		buttonLeftPanel.add(prevMsgButton);
 		buttonLeftPanel.add(nextMsgButton);
 		buttonLeftPanel.add(delButton);
 
+		JPanel buttonMiddlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		buttonMiddlePanel.add(moveMessageMsgButton);
+		buttonMiddlePanel.add(copyMessageMsgButton);
+		buttonMiddlePanel.add(comboBox);
+		
 		JPanel buttonRightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 		buttonRightPanel.add(backButton);
 		buttonRightPanel.add(nextButton);
 
 		JPanel buttonPanel = new JPanel(new BorderLayout());
 		buttonPanel.add(buttonLeftPanel, BorderLayout.WEST);
+		buttonPanel.add(buttonMiddlePanel, BorderLayout.CENTER);
 		buttonPanel.add(buttonRightPanel, BorderLayout.EAST);
 
 		// buttonPanel.add(new JButton("Button 2"));
@@ -191,12 +244,17 @@ public class BrowserDialog {
 		JPanel bottomPanel = new JPanel(new BorderLayout());
 
 		// Add a label at the top of the bottom panel
-		JLabel bottomLabel = new JLabel("Bottom Panel Label");
+		JLabel bottomLabel = new JLabel("Payload");
 		bottomPanel.add(bottomLabel, BorderLayout.NORTH);
 
 		// Add a large text area to the bottom panel
 		bottomPanel.add(textAreaScrollPane, BorderLayout.CENTER);
 
+		statusLabel = new JLabel("Browsing " + this.queue);
+		statusLabel.setFont(new Font("Arial", Font.PLAIN, 22));
+		bottomPanel.add(statusLabel, BorderLayout.SOUTH);
+
+		
 		// Add the top and bottom panels to the dialog
 		dialog.add(topPanel, BorderLayout.NORTH);
 		dialog.add(bottomPanel, BorderLayout.CENTER);
@@ -218,13 +276,41 @@ public class BrowserDialog {
 
 		dialog.setVisible(true);
 	}
+	
 
 	private void autoSelectFirstRow() {
 		table.setRowSelectionInterval(0, 0);
 		onSelectMessage(table, 0);
 	}
-
-	private void onDeleteMessage(JTable table, Component dialog, DefaultTableModel model) {
+	
+	private void onMoveMessage() {
+		moveOrCopy(true);
+	}
+	private void onCopyMessage() {
+		moveOrCopy(false);
+	}
+	private void moveOrCopy(boolean deleteFromSource) {
+		String selectedOption = (String) comboBox.getSelectedItem();
+		String id = getMessageIdOfSelectedARow();
+		System.out.println("moving message " + id + " to " + selectedOption);
+		
+		BytesXMLMessage msg = browser.get(id);
+		ReplicationGroupMessageId replicationId = msg.getReplicationGroupMessageId();
+		try {
+			sempV2ActionClient.copy(broker.msgVpnName, queue, selectedOption, replicationId.toString());
+		} catch (SempException e1) {
+			e1.printStackTrace();
+		}
+		if (deleteFromSource) {
+			browser.delete(id);
+			int selectedRow = table.getSelectedRow();
+			if (selectedRow != -1) {
+				tableModel.removeRow(selectedRow);
+			}
+		}
+	}
+	
+	private void onDeleteMessage(JTable table, Component dialog) {
 		String id = getMessageIdOfSelectedARow();
 		
 		int response = JOptionPane.showConfirmDialog(dialog, 
@@ -233,15 +319,24 @@ public class BrowserDialog {
                 JOptionPane.YES_NO_OPTION);
 
         if (response == JOptionPane.YES_OPTION) {
-    		this.browser.delete(id);
-    		int selectedRow = table.getSelectedRow();
-    		if (selectedRow != -1) {
-    			model.removeRow(selectedRow);
-    		}
+        	doDelete(id);
         } 
 	}
+	private void doDelete(String id) {
+		this.browser.delete(id);
+		int selectedRow = table.getSelectedRow();
+		
+		// skp ahead first so that the onSelect event handling properly sahows the next message
+		onNextMessage();
+		
+		// now axe the row that was deleted
+		if (selectedRow != -1) {
+			tableModel.removeRow(selectedRow);
+		}
+		
+	}
 
-	private void onNextMessage(JTable table) {
+	private void onNextMessage() {
 		int nRow = this.selectedRow + 1;
 		table.setRowSelectionInterval(nRow, nRow);
 		onSelectMessage(table, nRow);
@@ -271,6 +366,11 @@ public class BrowserDialog {
 			nextMsgButton.setEnabled(moreRowsAvailable);
 			delButton.setEnabled(true);
 			prevMsgButton.setEnabled(row > 0);
+			
+			moveMessageMsgButton.setEnabled(true);
+			copyMessageMsgButton.setEnabled(true);
+			
+			setStatus("Viewing message " + id);
 		} catch (Throwable t) {
 			System.out.println(t.getLocalizedMessage());
 		}
@@ -400,27 +500,82 @@ public class BrowserDialog {
 		}
 		return data;
 	}
+	
+    private class TableMouseListener extends MouseAdapter {
+        private final JTable table;
+		BrowserDialog browserDialog;
+        public TableMouseListener(JTable table, BrowserDialog browserDialog) {
+            this.table = table;
+            this.browserDialog = browserDialog; 
+        }
 
-	static class AlternatingRowColorRenderer extends DefaultTableCellRenderer {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
+        @Override
+        public void mousePressed(MouseEvent e) {
+            mousePressPoint = e.getPoint();
+        }
 
-		@Override
-		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
-				int row, int column) {
-			Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-			if (!isSelected) {
-				if (row % 2 == 0) {
-					c.setBackground(Color.LIGHT_GRAY);
-				} else {
-					c.setBackground(Color.WHITE);
-				}
-			} else {
-				c.setBackground(table.getSelectionBackground());
-			}
-			return c;
-		}
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            mousePressPoint = null;
+            // Handle selection logic here if needed
+            handleSelection(e);
+        }
+
+        private void handleSelection(MouseEvent e) {
+            int row = table.rowAtPoint(e.getPoint());
+            table.setRowSelectionInterval(row, row);
+            
+//			int row = table.rowAtPoint(e.getPoint());
+            
+    		SwingUtilities.invokeLater(() -> {
+    	           browserDialog.onSelectMessage(table, row);
+    		});
+
+        }
+    }
+    private class TableMouseMotionListener extends MouseMotionAdapter {
+        private final JTable table;
+
+        public TableMouseMotionListener(JTable table) {
+            this.table = table;
+        }
+
+        @Override
+        public void mouseDragged(MouseEvent e) {
+            if (mousePressPoint != null) {
+                Point dragPoint = e.getPoint();
+                int dragDistance = (int) mousePressPoint.distance(dragPoint);
+                if (dragDistance > 5) { // Threshold distance to start drag
+                    TransferHandler handler = table.getTransferHandler();
+                    handler.exportAsDrag(table, e, TransferHandler.MOVE);
+                }
+            }
+        }
+    }
+
+	@Override
+	public DroppableMessage getMessageBeingDragged(int row) {
+		String id = (String) table.getValueAt(row, nIdColumn);
+		BytesXMLMessage msg = browser.get(id);
+		ReplicationGroupMessageId replicationId = msg.getReplicationGroupMessageId();
+		
+		DroppableMessage dmsg = new DroppableMessage();
+		dmsg.id = id;
+		dmsg.queue = this.queue;
+		dmsg.replicationId = replicationId.toString();
+		dmsg.source = this;
+		return dmsg;
+	}
+
+	private void setStatus(String txt) {
+		SwingUtilities.invokeLater(() -> {
+			statusLabel.setText(txt);
+		});
+	}
+	@Override
+	public void onMessageWasMoved(DroppableMessage msg) {
+		doDelete(msg.id);
+		setStatus("Message " + msg.id + " was moved from " + msg.queue + " to " + msg.targetQueue);
+		//onNextMessage(this.table);		
 	}
 }

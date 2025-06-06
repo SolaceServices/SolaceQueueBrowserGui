@@ -199,8 +199,8 @@ public class HttpClient {
 			CookieJarImpl jar = new CookieJarImpl();
 			bob.cookieJar(jar);
 			
-			HostnameVerifier letItPass = new TolerantHostnameVerifier();
-			bob.hostnameVerifier(letItPass);
+			//HostnameVerifier letItPass = new TolerantHostnameVerifier();
+			//bob.hostnameVerifier(letItPass);
 
 			httpClient = bob.build();
 		}
