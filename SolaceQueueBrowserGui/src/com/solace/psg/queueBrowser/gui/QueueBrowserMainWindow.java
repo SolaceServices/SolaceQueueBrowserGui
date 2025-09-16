@@ -1,6 +1,7 @@
 package com.solace.psg.queueBrowser.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -58,19 +59,22 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 	int selectedQueueMsgCount = 0;
 	String configFile;
 	Config thisCfg = null;
-	private JButton browseButton;
-	private JButton copyAllButton;
-	private JButton deleteAllButton;
+	private JFrame frame;
 	private JLabel detailsLabel;
 	private JPanel buttonPanel;
 	private JButton moveAllButton;
-	//private JList listBox;
+	private JButton refreshButton;
+	private JButton browseButton;
+	private JButton copyAllButton;
+	private JButton deleteAllButton;
+
 	private IconicTableCellRenderer iconCellRenderer;
 	JLabel qIconlabel; 
 
 	private DefaultTableModel tableModel;
 
 	private JTable table;
+
 
 	class ListItem {
 	    private String text;
@@ -128,7 +132,7 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 
 	private void run() {
 			// Create the frame
-			JFrame frame = new JFrame("Solace Queue Maintenace Tool");
+			frame = new JFrame("Solace Queue Maintenace Tool");
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			frame.setSize(1200, 800);
 			frame.setLayout(new BorderLayout());
@@ -141,7 +145,12 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 			String[] columnNames = { "", "Queue Name"};
 
 			// Create the table model
-			tableModel = new DefaultTableModel(data, columnNames);
+			tableModel = new DefaultTableModel(data, columnNames) {
+				@Override
+				public boolean isCellEditable(int row, int column) {
+					return false; // Disable editing for all cells
+				}
+			};
 
 			// Create the table with the table model
 			table = new JTable(tableModel);
@@ -172,14 +181,11 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 
 			});
 	        table.setTransferHandler(new QueueMessageTransferReceiverHandler(this, "target-Q"));
-
 			
 			JPanel listPanel = new JPanel(new BorderLayout());
-			listPanel.setPreferredSize(new Dimension(400, listPanel.getPreferredSize().height)); // Set the preferred
-																									// width
+			listPanel.setPreferredSize(new Dimension(400, listPanel.getPreferredSize().height)); // Set the preferred width
 			listPanel.add(new JLabel("Queues"), BorderLayout.NORTH);
 			
-			//JScrollPane scrollingList = new JScrollPane(listBox);
 			JScrollPane scrollingList = new JScrollPane(table);
 			scrollingList.setBorder(new EmptyBorder(4, 4, 4, 4)); // Top, Left, Bottom, Right
 			listPanel.add(scrollingList, BorderLayout.CENTER);
@@ -252,51 +258,17 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 
 			});
 
+			refreshButton = new JButton("Refresh");
+			refreshButton.setEnabled(true);
+			refreshButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					onRefresh();
+				}
+			});
+
 			this.addButtons(buttonPanel);
 
-/*			
-			// Add action listener to the list
-			listBox.addListSelectionListener(e -> {
-				if (!e.getValueIsAdjusting()) {
-					detailsLabel.setFont(new Font("Serif", Font.PLAIN, 16));
-					selectedQueue = getSelectedQueue();
-					browseButton.setEnabled(true);
-					copyAllButton.setEnabled(true);
-					deleteAllButton.setEnabled(true);
-					moveAllButton.setEnabled(true);
-					try {
-						onQueueNameSelected(selectedQueue, detailsLabel, buttonPanel);
-					} catch (SempException | IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-				}
-			});
-			listBox.addMouseListener(new MouseAdapter() {
-				public void mouseClicked(MouseEvent e) {
-					if (e.getClickCount() == 2) {
-						// Get the selected item
-						detailsLabel.setFont(new Font("Serif", Font.PLAIN, 16));
-						selectedQueue = getSelectedQueue();
-						browseButton.setEnabled(true);
-						copyAllButton.setEnabled(true);
-						deleteAllButton.setEnabled(true);
-						moveAllButton.setEnabled(true);
-
-						try {
-							onQueueNameSelected(selectedQueue, detailsLabel, buttonPanel);
-						} catch (SempException | IOException e1) {
-							e1.printStackTrace();
-						}
-						try {
-							onBrowse(selectedQueue, frame);
-						} catch (SempException | JCSMPException e1) {
-							e1.printStackTrace();
-						}
-					}
-				}
-			});
-*/
 			JLabel iconLabel = new JLabel("");
 			iconLabel.setIcon(icon);
 
@@ -333,7 +305,31 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 			frame.add(buttonPanel, BorderLayout.SOUTH);
 
 			frame.setVisible(true);
-//		});
+	}
+	private void onRefresh() {
+		frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+		
+		SwingUtilities.invokeLater(() -> {
+
+			DefaultTableModel model = (DefaultTableModel) table.getModel();
+			model.setRowCount(0); // Clears all existing rows
+
+			try {
+				queues = sempV2ConfigClient.getAllQueueNames(broker.msgVpnName);
+				Collections.sort(queues);
+
+				Object[][] newData = getTableData(queues);// new String[][] {};
+				for (Object[] rowData : newData) {
+				    model.addRow(rowData); // Add new rows
+				}
+
+			} catch (SempException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			frame.setCursor(Cursor.getDefaultCursor());
+		});
 	}
 	
 	@Override
@@ -380,6 +376,7 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 		return(String) table.getValueAt(table.getSelectedRow(), 1);
 	}
 	private void addButtons(JPanel buttonPanel) {
+		buttonPanel.add(refreshButton);
 		buttonPanel.add(copyAllButton);
 		buttonPanel.add(moveAllButton);
 		buttonPanel.add(deleteAllButton);

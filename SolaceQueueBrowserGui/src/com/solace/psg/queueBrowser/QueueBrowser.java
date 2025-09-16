@@ -19,7 +19,8 @@ public class QueueBrowser {
 	private JCSMPSession solaceJcsmpSession = null;
 	private BytesXMLMessage preFetchedNextMessage = null;
 	private int paginationSize = 1;
-
+	private String lastIdFetched = "";
+	
 	public QueueBrowser(Broker broker, String qToBrowse) {
 		this.broker = broker;
 		this.qToBrowse = qToBrowse;
@@ -83,6 +84,7 @@ public class QueueBrowser {
 				@SuppressWarnings("deprecation")
 				String id = preFetchedNextMessage.getMessageId();
 				logger.debug("Fetched a msg, id =" + id);
+				this.lastIdFetched  = id;
 			}
 		} catch (JCSMPException e) {
 			throw new BrokerException(e);
@@ -101,6 +103,16 @@ public class QueueBrowser {
 	private void close() {
 		solaceBrowserObject.close();
 		solaceJcsmpSession.closeSession();
+	}
+
+	public boolean hasMoreAfterId(String id) {
+		boolean bRc = true;
+		if (this.lastIdFetched.equals(id)) {
+			// its the last one that was fetched. since we prefetch a page at a time, if this is the last 
+			// id fetched, it means this is the end of the queue
+			bRc = false;
+		}
+		return bRc;
 	}
 
 	/* if you want to run a text based standalone, uncomment from here to the end of main()

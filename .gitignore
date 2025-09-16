@@ -12,3 +12,5 @@ SolaceQueueBrowserGui/target/maven-archiver/
 SolaceQueueBrowserGui/target/maven-status/
 SolaceQueueBrowserGui/logs/
 
+*.pdn
+requirements.txt

@@ -9,6 +9,7 @@ import com.solace.psg.brokers.semp.SempClient;
 import com.solace.psg.brokers.semp.SempClient.QueueInfo;
 import com.solace.psg.brokers.semp.SempException;
 import com.solace.psg.queueBrowser.QueueBrowser;
+import com.solace.psg.util.CommandLog;
 import com.solacesystems.jcsmp.BytesXMLMessage;
 import com.solacesystems.jcsmp.ReplicationGroupMessageId;
 
@@ -225,11 +226,21 @@ public class QueueActionWindow extends JPanel {
 								ReplicationGroupMessageId replicationId = msg.getReplicationGroupMessageId();
 				    			sempV2ActionClient.copy(msgVpnName, srcQName, tarQName, replicationId.toString());
 				    			
+				    			
+				    			String action = "moved";
+				    			if (eActionSelected == eAction.eCopy) {
+				    				action = "copied";
+				    			}
+				    			String logMsg = "MessageId " + msg.getMessageId() + " (replication id='" + replicationId.toString() + "') was " + action + 
+				    					" from the '" + srcQName + "' queue to the '" + tarQName + "'.";
+				    			CommandLog.instance().log(logMsg);
 				    			if (eActionSelected == eAction.eMove) {
 				    				axeIt = true;
 				    			}
 							}
 							else {
+				    			String logMsg = "MessageId " + msg.getMessageId() + " was deleted from the '" + srcQName + "' queue.";
+				    			CommandLog.instance().log(logMsg);
 			    				axeIt = true;
 							}
 							
