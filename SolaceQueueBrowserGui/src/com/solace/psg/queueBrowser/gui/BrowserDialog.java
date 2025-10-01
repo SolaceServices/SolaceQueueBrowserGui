@@ -235,7 +235,7 @@ public class BrowserDialog implements IDragDropInstigator {
 		prevMsgButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				onPreviousMessage(table);
+				onPreviousMessage();
 			}
 		});
 		copyMessageMsgButton = new JButton("Copy to Queue:");
@@ -435,7 +435,7 @@ public class BrowserDialog implements IDragDropInstigator {
 	}
 	private void moveOrCopy(boolean deleteFromSource) {
 		String selectedTargetQueue = (String) comboBox.getSelectedItem();
-		String id = getMessageIdOfSelectedARow();
+		String id = getMessageIdOfSelectedRow();
 		System.out.println("moving message " + id + " to " + selectedTargetQueue);
 		
 		BytesXMLMessage msg = browser.get(id);
@@ -500,7 +500,7 @@ public class BrowserDialog implements IDragDropInstigator {
 	}
 	private void onDownloadMessage() {
 		try {
-			String id = getMessageIdOfSelectedARow();
+			String id = getMessageIdOfSelectedRow();
 			BytesXMLMessage message = this.browser.get(id);
 			String payload = browser.getPayload(message);
 			String[][] headers = getMessageHeadersData(message);
@@ -554,7 +554,7 @@ public class BrowserDialog implements IDragDropInstigator {
         fis.close();
 	}
 	private void onDeleteMessage(JTable table, Component dialog) {
-		String id = getMessageIdOfSelectedARow();
+		String id = getMessageIdOfSelectedRow();
 		
 		int response = JOptionPane.showConfirmDialog(dialog, 
                 "Are you sure you want to delete message (" + id + ")?", 
@@ -573,28 +573,47 @@ public class BrowserDialog implements IDragDropInstigator {
 		this.browser.delete(id);
 		int selectedRow = table.getSelectedRow();
 		
-		// skp ahead first so that the onSelect event handling properly sahows the next message
-		onNextMessage();
-		
+		numberOfMessagesOnTheCurrentPage--;
+
 		// now axe the row that was deleted
 		if (selectedRow != -1) {
 			tableModel.removeRow(selectedRow);
 		}
+
+		if (numberOfMessagesOnTheCurrentPage == 0) {
+			// this is the only message, thing else to select
+			clearMessageSelection();
+		}
+		else if (selectedRow == this.numberOfMessagesOnTheCurrentPage) {
+			// this is the last row, move back one
+			onPreviousMessage();
+		}
+		else {
+			// skip ahead first so that the onSelect event handling properly shows the next message
+			onNextMessage();
+		}
+		
 		
 	}
 
 	private void onNextMessage() {
 		int nRow = this.selectedRow + 1;
+		
+		int max = table.getRowCount();
+		if ((nRow < 0) || (nRow > (max -1))) {
+			nRow = nRow;
+		}
+		
 		table.setRowSelectionInterval(nRow, nRow);
 		onSelectMessage(table, nRow);
 	}
-	private void onPreviousMessage(JTable table) {
+	private void onPreviousMessage() {
 		int nRow = this.selectedRow - 1;
 		table.setRowSelectionInterval(nRow, nRow);
 		onSelectMessage(table, nRow);
 	}
 
-	private String getMessageIdOfSelectedARow() {
+	private String getMessageIdOfSelectedRow() {
 		return(String) table.getValueAt(this.selectedRow, nIdColumn);
 	}
 	
@@ -660,25 +679,50 @@ public class BrowserDialog implements IDragDropInstigator {
 	
 	private String[][] getMessageUserPropsData(BytesXMLMessage message) throws SDTException {
 		SDTMap map = message.getProperties();
-		
-		String[][] data = new String[map.size()][];
-
-		Set<String> keys = map.keySet();
-		int i = 0;
-		for (String key : keys) {
-	        Object value = map.get(key);
-			data[i] = new String[2];
-			data[i][0] = key;
-			data[i][1] = value.toString();
-			i++;
+		String[][] data = null;
+		if (map != null) {
+			data = new String[map.size()][];
+	
+			Set<String> keys = map.keySet();
+			int i = 0;
+			for (String key : keys) {
+		        Object value = map.get(key);
+				data[i] = new String[2];
+				data[i][0] = key;
+				data[i][1] = value.toString();
+				i++;
+			}
+		}
+		else {
+			data = new String[0][];
 		}
 		return data;
 	}
 	
+	private void clearMessageSelection() {
+		DefaultTableModel headersTableModel = (DefaultTableModel) headersTable.getModel();
+		headersTableModel.setRowCount(0); // Clears all existing rows
+		DefaultTableModel propsTableModel = (DefaultTableModel) propsTable.getModel();
+		propsTableModel.setRowCount(0); // Clears all existing rows
+
+		nextMsgButton.setEnabled(false);
+		delButton.setEnabled(false);
+		prevMsgButton.setEnabled(false);
+		
+		moveMessageMsgButton.setEnabled(false);
+		copyMessageMsgButton.setEnabled(false);
+		downloadMessageMsgButton.setEnabled(false);
+		textArea.setText("");
+
+		setStatus("Noting selected - selectedRow=" + selectedRow + ",total=" + this.numberOfMessagesOnTheCurrentPage ) ;
+		
+		this.selectedRow = -1;
+
+	}
 	private void onSelectMessage(JTable table, int row) {
 		try {
 			this.selectedRow = row;
-			String id = getMessageIdOfSelectedARow();
+			String id = getMessageIdOfSelectedRow();
 			String payload = browser.getPayload(id);
 			textArea.setText(payload);
 			textArea.setCaretPosition(0);
@@ -713,7 +757,7 @@ public class BrowserDialog implements IDragDropInstigator {
 			copyMessageMsgButton.setEnabled(true);
 			downloadMessageMsgButton.setEnabled(true);
 			
-			setStatus("Viewing message " + id);
+			setStatus("Viewing message " + id + "; selectedRow=" + selectedRow + ",total=" + this.numberOfMessagesOnTheCurrentPage ) ;
 		} catch (Throwable t) {
 			System.out.println(t.getLocalizedMessage());
 		}
@@ -820,10 +864,11 @@ public class BrowserDialog implements IDragDropInstigator {
 			String id = message.getMessageId();
 			row.add(id);
 
-			int size = message.getAttachmentContentLength();
-			if (size == 0) {
-				size = message.getBinaryMetadataContentLength(size);
-			}
+			String payload = this.browser.getPayload(message);
+			int size = payload.length();
+//			if (size == 0) {
+//				size = message.getBinaryMetadataContentLength(size);
+//			}
 			row.add("" + size);
 
 			String yN = "No";

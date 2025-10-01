@@ -1,5 +1,7 @@
 package com.solace.psg.queueBrowser;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,6 +25,8 @@ import com.solacesystems.jcsmp.SDTMap;
 import com.solacesystems.jcsmp.SDTStream;
 import com.solacesystems.jcsmp.StreamMessage;
 import com.solacesystems.jcsmp.TextMessage;
+import com.solacesystems.jcsmp.XMLContentMessage;
+import com.solacesystems.jcsmp.impl.JCSMPGenericXMLMessage;
 
 @SuppressWarnings("unused")
 public class PaginatedCachingBrowser {
@@ -78,7 +82,13 @@ public class PaginatedCachingBrowser {
 		else if (message instanceof BytesMessage) {
 			BytesMessage by = (BytesMessage) message;
 			byte[] b = by.getData(); 
-			payload = new String(b);
+			if (b != null) {
+				payload = new String(b);
+			}
+			else {
+				byte[] bytes = by.getBytes();
+				payload = new String(bytes); 
+			}
 		}
 		else if (message instanceof StreamMessage) {
 			try {
@@ -116,9 +126,20 @@ public class PaginatedCachingBrowser {
 		               .append(value.toString()) 
 		               .append("\n");
 		    }
-
-		    payload = builder.toString().trim();
+			payload = builder.toString().trim();
 		}
+	    else if (message instanceof XMLContentMessage) {
+	    	XMLContentMessage xml = (XMLContentMessage) message;
+	    	if (xml.hasAttachment()) {
+		    	ByteBuffer binaryPayload = xml.getAttachmentByteBuffer();
+		    	byte[] bytes = new byte[binaryPayload.remaining()];
+		    	binaryPayload.get(bytes);
+		    	payload = new String(bytes, StandardCharsets.UTF_8);
+	    	}
+	    	else {
+	    		payload = xml.getXMLContent();
+	    	}
+	    }
 
 		return payload;
 	}

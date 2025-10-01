@@ -529,6 +529,9 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 		addRowToDisplay(info, sb, "maxMsgSpoolUsage", false);
 		addRowToDisplay(info, sb, "owner", false);
 		addRowToDisplay(info, sb, "permission", false);
+		addRowToDisplay(info, sb, "egressEnabled", false);
+		addRowToDisplay(info, sb, "ingressEnabled", false);
+
         sb.append("</table>");
         sb.append("</div>");
         sb.append("</html>");
