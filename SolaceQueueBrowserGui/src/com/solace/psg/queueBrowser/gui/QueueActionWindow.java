@@ -20,6 +20,13 @@ import java.awt.event.ActionListener;
 public class QueueActionWindow extends JPanel {
 	private static final long serialVersionUID = 1L;
 
+	// Modern color scheme (consistent with other components)
+	private static final Color PRIMARY_COLOR = new Color(0x2196F3);
+	private static final Color SUCCESS_COLOR = new Color(0x4CAF50);
+	private static final Color WARNING_COLOR = new Color(0xFF9800);
+	private static final Color ERROR_COLOR = new Color(0xF44336);
+	private static final Color SURFACE_COLOR = new Color(0xFAFAFA);
+
 	public enum eAction {eCopy, eMove, eDelete};
 	private eAction eActionSelected;
 	private int topY = 10;
@@ -106,6 +113,18 @@ public class QueueActionWindow extends JPanel {
 		shovelTimer.start();
 	}
 
+	private JButton createStyledButton(String text, Color backgroundColor) {
+		JButton button = new JButton(text);
+		button.setBackground(backgroundColor);
+		button.setForeground(Color.WHITE);
+		button.setFocusPainted(false);
+		button.setBorderPainted(false);
+		button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		button.setPreferredSize(new Dimension(button.getPreferredSize().width + 16, 32));
+		button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		return button;
+	}
+
 	@Override
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
@@ -135,21 +154,23 @@ public class QueueActionWindow extends JPanel {
 
 		JPanel verticalPanel = new JPanel();
 		verticalPanel.setLayout(new BoxLayout(verticalPanel, BoxLayout.Y_AXIS));
-		verticalPanel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4)); // Add some margin
+		verticalPanel.setBackground(SURFACE_COLOR);
+		verticalPanel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
 
 		JLabel labelTop = new JLabel(srcQlabelTitle);
-		labelTop.setFont(new Font("Arial", Font.PLAIN, 16));
+		labelTop.setFont(new Font("Segoe UI", Font.BOLD, 16));
+		labelTop.setForeground(PRIMARY_COLOR);
 		verticalPanel.add(labelTop);
 
 		JLabel labelLine2 = new JLabel("Source queue: '" + srcQName + "'.");
-		labelLine2.setBorder(new EmptyBorder(5, 20, 0, 0)); // Top, Left, Bottom, Right
-		labelLine2.setFont(labelTop.getFont());
+		labelLine2.setBorder(new EmptyBorder(8, 24, 0, 0));
+		labelLine2.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 		verticalPanel.add(labelLine2);
 
 		if ((eActionSelected == eAction.eCopy) || (eActionSelected == eAction.eMove)) {
 			JLabel labelLine3 = new JLabel("Target queue: '" + tarQName + "'.");
-			labelLine3.setBorder(new EmptyBorder(5, 20, 10, 0)); // Top, Left, Bottom, Right
-			labelLine3.setFont(labelTop.getFont());
+			labelLine3.setBorder(new EmptyBorder(8, 24, 16, 0));
+			labelLine3.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 			verticalPanel.add(labelLine3);
 		}
 
@@ -160,23 +181,25 @@ public class QueueActionWindow extends JPanel {
 		progressBar.setBorder(new EmptyBorder(0, 10, 0, 10)); // Top, Left, Bottom, Right
 
 		JPanel parentPanel = new JPanel();
-		parentPanel.setLayout(new BorderLayout()); // Use BorderLayout to stack them
-		parentPanel.add(this, BorderLayout.CENTER); // Add the animation panel
+		parentPanel.setLayout(new BorderLayout());
+		parentPanel.setBackground(SURFACE_COLOR);
+		parentPanel.add(this, BorderLayout.CENTER);
 		parentPanel.add(verticalPanel, BorderLayout.SOUTH);
 
 		frame.add(parentPanel); // , BorderLayout.CENTER);
 		
 		progressLabel = new JLabel(this.getProgressLabelText());
-		progressLabel.setBorder(new EmptyBorder(4, 4, 4, 4)); // Top, Left, Bottom, Right
-		progressLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+		progressLabel.setBorder(new EmptyBorder(8, 8, 8, 8));
+		progressLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 		JPanel labelPanel = new JPanel();
-		labelPanel.setLayout(new BorderLayout()); // Use BorderLayout to stack them
+		labelPanel.setLayout(new BorderLayout());
+		labelPanel.setBackground(SURFACE_COLOR);
 		labelPanel.add(progressLabel, BorderLayout.WEST);
 
 		frame.add(labelPanel);// , BorderLayout.SOUTH);
 		frame.add(progressBar);// , BorderLayout.SOUTH);
 
-		JButton cancelButton = new JButton("Cancel");
+		JButton cancelButton = createStyledButton("Cancel", ERROR_COLOR);
 		cancelButton.setEnabled(true);
 		cancelButton.addActionListener(new ActionListener() {
 			@Override
@@ -189,7 +212,8 @@ public class QueueActionWindow extends JPanel {
 				});
 			}
 		});
-		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
+		buttonPanel.setBackground(SURFACE_COLOR);
 		buttonPanel.setBorder(new EmptyBorder(1, 4, 1, 4)); // Top, Left, Bottom, Right
 		buttonPanel.add(cancelButton);
 		frame.add(buttonPanel);

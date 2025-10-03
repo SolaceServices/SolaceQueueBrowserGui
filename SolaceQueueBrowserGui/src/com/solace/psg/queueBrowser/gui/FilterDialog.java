@@ -1,6 +1,7 @@
 package com.solace.psg.queueBrowser.gui;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
 import com.solace.psg.queueBrowser.gui.FilterSpecification.FilterCondition;
 import com.solace.psg.queueBrowser.gui.headers.HeaderField;
@@ -12,6 +13,13 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
 public class FilterDialog extends JDialog{
+	// Modern color scheme (consistent with other components)
+	private static final Color PRIMARY_COLOR = new Color(0x2196F3);
+	private static final Color SUCCESS_COLOR = new Color(0x4CAF50);
+	private static final Color WARNING_COLOR = new Color(0xFF9800);
+	private static final Color ERROR_COLOR = new Color(0xF44336);
+	private static final Color SURFACE_COLOR = new Color(0xFAFAFA);
+
 	public boolean cancelled = false;
 	JPanel headerCards; 
 	JComboBox<String> headerField;
@@ -33,6 +41,18 @@ public class FilterDialog extends JDialog{
 		super(dialog, "Message Filter", true);
         parent = dialog;
         spec = parentProvidedSpec;
+	}
+
+	private JButton createStyledButton(String text, Color backgroundColor) {
+		JButton button = new JButton(text);
+		button.setBackground(backgroundColor);
+		button.setForeground(Color.WHITE);
+		button.setFocusPainted(false);
+		button.setBorderPainted(false);
+		button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		button.setPreferredSize(new Dimension(button.getPreferredSize().width + 16, 32));
+		button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		return button;
 	}
 	private static String[] getHeaderFieldNames( ) {
 		return new String[] {
@@ -244,16 +264,20 @@ public class FilterDialog extends JDialog{
 //       SwingUtilities.invokeLater(() -> {
             //JFrame frame = new JFrame("Message Filter");
             this.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-            this.setSize(800, 600);
-            this.setLayout(new GridLayout(4, 1));
+            this.setSize(850, 650);
+            this.setLayout(new BorderLayout());
+            this.getContentPane().setBackground(SURFACE_COLOR);
             
             ImageIcon icon = new ImageIcon("config/filter.png");
 			Image image = icon.getImage();
 			this.setIconImage(image);
 
             // Header Filter Panel
-            JPanel headerPanel = new JPanel(new FlowLayout());
-            headerPanel.setBorder(BorderFactory.createTitledBorder("Header Filter"));
+            JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 8));
+            headerPanel.setBackground(SURFACE_COLOR);
+            headerPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(null, "Header Filter", 0, 0, new Font("Segoe UI", Font.BOLD, 14), PRIMARY_COLOR),
+                new EmptyBorder(8, 16, 8, 16)));
             headerField = new JComboBox<>(getHeaderFieldNames());
             headerCondition = new JComboBox<>(conditionValues());
             headerValue = new JTextField(20);
@@ -264,8 +288,11 @@ public class FilterDialog extends JDialog{
             headerPanel.add(this.headers());
 
             // Property Filter Panel
-            JPanel propertyPanel = new JPanel(new FlowLayout());
-            propertyPanel.setBorder(BorderFactory.createTitledBorder("User Property Filter"));
+            JPanel propertyPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 8));
+            propertyPanel.setBackground(SURFACE_COLOR);
+            propertyPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(null, "User Property Filter", 0, 0, new Font("Segoe UI", Font.BOLD, 14), PRIMARY_COLOR),
+                new EmptyBorder(8, 16, 8, 16)));
             propertyField = new JTextField(20);
             propertyCondition = new JComboBox<>(conditionValues());
             propertyValue = new JTextField(20);
@@ -274,17 +301,21 @@ public class FilterDialog extends JDialog{
             propertyPanel.add(propertyValue);
 
             // Body Filter Panel
-            JPanel bodyPanel = new JPanel(new FlowLayout());
-            bodyPanel.setBorder(BorderFactory.createTitledBorder("Body Filter"));
+            JPanel bodyPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 8));
+            bodyPanel.setBackground(SURFACE_COLOR);
+            bodyPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(null, "Body Filter", 0, 0, new Font("Segoe UI", Font.BOLD, 14), PRIMARY_COLOR),
+                new EmptyBorder(8, 16, 8, 16)));
             bodyCondition = new JComboBox<>(conditionValues());
             bodyValue = new JTextField(20);
             bodyPanel.add(new JLabel("Body"));
             bodyPanel.add(bodyCondition);
             bodyPanel.add(bodyValue);
 
-            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 16));
+            buttonPanel.setBackground(SURFACE_COLOR);
 
-            JButton cancelButton = new JButton("Cancel");
+            JButton cancelButton = createStyledButton("Cancel", ERROR_COLOR);
             cancelButton.addActionListener(new ActionListener() {
     			@Override
     			public void actionPerformed(ActionEvent e) {
@@ -292,7 +323,7 @@ public class FilterDialog extends JDialog{
     			}
     		});
 
-            JButton clearButton = new JButton("Clear Filter");
+            JButton clearButton = createStyledButton("Clear Filter", WARNING_COLOR);
             clearButton.addActionListener(new ActionListener() {
     			@Override
     			public void actionPerformed(ActionEvent e) {
@@ -300,7 +331,7 @@ public class FilterDialog extends JDialog{
     			}
     		});
 
-            JButton applyButton = new JButton("Apply");
+            JButton applyButton = createStyledButton("Apply", SUCCESS_COLOR);
             applyButton.addActionListener(new ActionListener() {
     			@Override
     			public void actionPerformed(ActionEvent e) {
@@ -312,11 +343,21 @@ public class FilterDialog extends JDialog{
             buttonPanel.add(clearButton);
             buttonPanel.add(applyButton);
 
-            // Add panels to frame
-            this.add(headerPanel);
-            this.add(propertyPanel);
-            this.add(bodyPanel);
-            this.add(buttonPanel);
+            // Create main content panel
+            JPanel contentPanel = new JPanel();
+            contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+            contentPanel.setBackground(SURFACE_COLOR);
+            contentPanel.setBorder(new EmptyBorder(16, 16, 8, 16));
+            
+            contentPanel.add(headerPanel);
+            contentPanel.add(Box.createVerticalStrut(8));
+            contentPanel.add(propertyPanel);
+            contentPanel.add(Box.createVerticalStrut(8));
+            contentPanel.add(bodyPanel);
+            
+            // Add panels to dialog
+            this.add(contentPanel, BorderLayout.CENTER);
+            this.add(buttonPanel, BorderLayout.SOUTH);
 
             this.pack();
     		this.setLocationRelativeTo(parent);

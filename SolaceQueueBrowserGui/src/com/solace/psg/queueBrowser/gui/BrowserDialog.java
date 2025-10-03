@@ -39,6 +39,7 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
 import com.solace.psg.brokers.Broker;
@@ -58,6 +59,14 @@ import com.solacesystems.jcsmp.SDTException;
 import com.solacesystems.jcsmp.SDTMap;
 
 public class BrowserDialog implements IDragDropInstigator {
+	// Modern color scheme (consistent with QueueBrowserMainWindow)
+	private static final Color PRIMARY_COLOR = new Color(0x2196F3);
+	private static final Color ACCENT_COLOR = new Color(0xFF5722);
+	private static final Color SUCCESS_COLOR = new Color(0x4CAF50);
+	private static final Color WARNING_COLOR = new Color(0xFF9800);
+	private static final Color ERROR_COLOR = new Color(0xF44336);
+	private static final Color SURFACE_COLOR = new Color(0xFAFAFA);
+
 	private Broker broker;
 	private PaginatedCachingBrowser browser;
 	private String queue;
@@ -126,6 +135,18 @@ public class BrowserDialog implements IDragDropInstigator {
 		this.browser.setFilter(spec);
 	}
 
+	private JButton createStyledButton(String text, Color backgroundColor) {
+		JButton button = new JButton(text);
+		button.setBackground(backgroundColor);
+		button.setForeground(Color.WHITE);
+		button.setFocusPainted(false);
+		button.setBorderPainted(false);
+		button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		button.setPreferredSize(new Dimension(button.getPreferredSize().width + 16, 32));
+		button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		return button;
+	}
+
 	@SuppressWarnings("serial")
 	void run() throws JCSMPException {
 		int totalTableWidth = 1480; 
@@ -134,14 +155,21 @@ public class BrowserDialog implements IDragDropInstigator {
 		dialog.setSize(1600, 1200);
 		dialog.setLayout(new BorderLayout());
 		dialog.setModal(false);
+		dialog.getContentPane().setBackground(SURFACE_COLOR);
 
 		// Create the top panel
 		JPanel topPanel = new JPanel(new BorderLayout());
+		topPanel.setBackground(SURFACE_COLOR);
+		topPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
 
 		JPanel topTextMessages = new JPanel(new BorderLayout());
+		topTextMessages.setBackground(SURFACE_COLOR);
 		topLabel = new JLabel("Message in the " + this.queue + " queue. Showing page " + nCurPage + " of about "
 				+ estimatedPageCount);
+		topLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+		topLabel.setForeground(PRIMARY_COLOR);
 		filterLabel = new JLabel("<html><br>Filter: '" + spec.bodyValue + "'; showing only messages where this text is contained in the payload<br><br></html>");
+		filterLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
 
 		topTextMessages.add(topLabel, BorderLayout.NORTH);
@@ -177,9 +205,15 @@ public class BrowserDialog implements IDragDropInstigator {
         table.getColumnModel().getColumn(2).setPreferredWidth(remainindWidth/3);
         table.getColumnModel().getColumn(3).setPreferredWidth(remainindWidth/3);
         
-		// Enable gridlines
-		table.setShowGrid(true);
-		table.setGridColor(Color.BLACK);
+		// Modern table styling
+		table.setRowHeight(36);
+		table.setShowGrid(false);
+		table.setIntercellSpacing(new Dimension(0, 0));
+		table.setSelectionBackground(PRIMARY_COLOR.brighter());
+		table.setSelectionForeground(Color.WHITE);
+		table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+		table.getTableHeader().setBackground(SURFACE_COLOR);
 //		table.addMouseListener(new MouseAdapter() {
 //			@Override
 //			public void mouseClicked(MouseEvent e) {
@@ -195,7 +229,7 @@ public class BrowserDialog implements IDragDropInstigator {
 		listScrollPane.setPreferredSize(new Dimension(380, 400));
 		topPanel.add(listScrollPane, BorderLayout.CENTER);
 
-		JButton backButton = new JButton("<< Previous Page");
+		JButton backButton = createStyledButton("<< Previous Page", new Color(0x607D8B));
 		backButton.setEnabled(false);
 		backButton.addActionListener(new ActionListener() {
 			@Override
@@ -204,7 +238,7 @@ public class BrowserDialog implements IDragDropInstigator {
 			}
 		});
 
-		nextButton = new JButton("Next Page >>");
+		nextButton = createStyledButton("Next Page >>", new Color(0x607D8B));
 		nextButton.setEnabled(false);
 		nextButton.addActionListener(new ActionListener() {
 			@Override
@@ -213,7 +247,7 @@ public class BrowserDialog implements IDragDropInstigator {
 			}
 		});
 
-		delButton = new JButton("Delete");
+		delButton = createStyledButton("Delete", ERROR_COLOR);
 		delButton.setEnabled(false);
 		delButton.addActionListener(new ActionListener() {
 			@Override
@@ -222,7 +256,7 @@ public class BrowserDialog implements IDragDropInstigator {
 			}
 		});
 
-		nextMsgButton = new JButton("Next Message >");
+		nextMsgButton = createStyledButton("Next Message >", PRIMARY_COLOR);
 		nextMsgButton.setEnabled(false);
 		nextMsgButton.addActionListener(new ActionListener() {
 			@Override
@@ -230,7 +264,7 @@ public class BrowserDialog implements IDragDropInstigator {
 				onNextMessage();
 			}
 		});
-		prevMsgButton = new JButton("< Previous Message");
+		prevMsgButton = createStyledButton("< Previous Message", PRIMARY_COLOR);
 		prevMsgButton.setEnabled(false);
 		prevMsgButton.addActionListener(new ActionListener() {
 			@Override
@@ -238,7 +272,7 @@ public class BrowserDialog implements IDragDropInstigator {
 				onPreviousMessage(table);
 			}
 		});
-		copyMessageMsgButton = new JButton("Copy to Queue:");
+		copyMessageMsgButton = createStyledButton("Copy to Queue:", SUCCESS_COLOR);
 		copyMessageMsgButton.setEnabled(false);
 		copyMessageMsgButton.addActionListener(new ActionListener() {
 			@Override
@@ -247,7 +281,7 @@ public class BrowserDialog implements IDragDropInstigator {
 			}
 		});
 
-		moveMessageMsgButton = new JButton("Move to Queue:");
+		moveMessageMsgButton = createStyledButton("Move to Queue:", WARNING_COLOR);
 		moveMessageMsgButton.setEnabled(false);
 		moveMessageMsgButton.addActionListener(new ActionListener() {
 			@Override
@@ -260,7 +294,7 @@ public class BrowserDialog implements IDragDropInstigator {
         preferredSize.width = 400;
         comboBox.setPreferredSize(preferredSize);
 
-        downloadMessageMsgButton = new JButton("Download");
+        downloadMessageMsgButton = createStyledButton("Download", ACCENT_COLOR);
         downloadMessageMsgButton.setEnabled(false);
         downloadMessageMsgButton.addActionListener(new ActionListener() {
 			@Override
@@ -269,7 +303,7 @@ public class BrowserDialog implements IDragDropInstigator {
 			}
 		});
 
-		JButton filterButton = new JButton("Filter messages...");
+		JButton filterButton = createStyledButton("Filter messages...", new Color(0x9C27B0));
 		filterButton.setEnabled(true);
 		filterButton.addActionListener(new ActionListener() {
 			@Override

@@ -92,6 +92,11 @@
          <artifactId>sol-jcsmp</artifactId>
          <version>10.21.0</version>
       </dependency>
+      <dependency>
+         <groupId>com.formdev</groupId>
+         <artifactId>flatlaf</artifactId>
+         <version>3.2.5</version>
+      </dependency>
    </dependencies>
    <build>
       <finalName>SolaceQueueBrowserGui-${project.version}</finalName>
