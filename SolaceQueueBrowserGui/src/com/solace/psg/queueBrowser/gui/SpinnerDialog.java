@@ -10,8 +10,8 @@ import javax.swing.JProgressBar;
 public class SpinnerDialog extends JDialog {
 	private static final long serialVersionUID = 1L;
 
-	public SpinnerDialog(JDialog dialog) {
-        super(dialog, "Applying filter...", false); // false = non-modal
+	public SpinnerDialog(JDialog dialog, String title) {
+        super(dialog, title + "...", false); // false = non-modal
         
         this.setSize(600, 300);
         setLayout(new BorderLayout());

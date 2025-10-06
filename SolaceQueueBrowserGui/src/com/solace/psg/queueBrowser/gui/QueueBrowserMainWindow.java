@@ -16,17 +16,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
@@ -181,6 +184,31 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 
 			});
 	        table.setTransferHandler(new QueueMessageTransferReceiverHandler(this, "target-Q"));
+	        table.getActionMap().put("upArrow", new AbstractAction() {
+				public void actionPerformed(ActionEvent e) {
+					int row = table.getSelectedRow();
+					if (row > 0) {
+						row--;
+						table.setRowSelectionInterval(row, row);
+						onSelectQueue(table, row);
+					}
+				}
+			});
+
+			// DOWN arrow key binding
+			table.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke("DOWN"),"downArrow");
+			table.getActionMap().put("downArrow", new AbstractAction() {
+				public void actionPerformed(ActionEvent e) {
+					int row = table.getSelectedRow();
+					int rowCount = table.getRowCount();
+
+					if (row < (rowCount - 1)) {
+						row++;
+						table.setRowSelectionInterval(row, row);
+						onSelectQueue(table, row);
+					}
+				}
+			});
 			
 			JPanel listPanel = new JPanel(new BorderLayout());
 			listPanel.setPreferredSize(new Dimension(400, listPanel.getPreferredSize().height)); // Set the preferred width
@@ -386,7 +414,7 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 	private void onBrowse(String queueName, JFrame frame) throws SempException, JCSMPException {
 		String[] otherQueues = getListOfQueuesExceptCurrentlySelectedOne(queueName);
 		BrowserDialog d = new BrowserDialog(this.sempV2ActionClient, this.broker, queueName, frame,
-				selectedQueueMsgCount, otherQueues);
+				selectedQueueMsgCount, otherQueues, thisCfg.downloadFolder);
 		d.run();
 	}
 
@@ -497,6 +525,13 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
             	 }
              }
              
+             if (fieldName.equals("partitionCount")) {
+            	 int val = Integer.parseInt(value.toString());
+            	 if (val > 0) {
+            		 strValue += " - CANNOT browse"; 
+            	 }
+             }
+             
              String style = " ";
              if (big) {
             	 style = " style='font-size: 20px;' ";
@@ -531,6 +566,7 @@ public class QueueBrowserMainWindow implements IDragDropTarget {
 		addRowToDisplay(info, sb, "permission", false);
 		addRowToDisplay(info, sb, "egressEnabled", false);
 		addRowToDisplay(info, sb, "ingressEnabled", false);
+		addRowToDisplay(info, sb, "partitionCount", false);
 
         sb.append("</table>");
         sb.append("</div>");

@@ -12,8 +12,9 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
 public class FilterDialog extends JDialog{
+	private static final long serialVersionUID = 1L;
 	public boolean cancelled = false;
-	JPanel headerCards; 
+	JPanel headerCards;
 	JComboBox<String> headerField;
     JComboBox<String> headerCondition;
     JTextField headerValue;
@@ -44,14 +45,17 @@ public class FilterDialog extends JDialog{
 	}
 	private void clearAllControls() {
 		headerField.setSelectedItem("Destination");
-		headerCondition.setSelectedItem(FilterSpecification.FilterCondition.NONE);
+		headerCondition.setSelectedItem(FilterSpecification.FilterCondition.NONE.getLabel());
 		headerValue.setText("");
 		
+		CardLayout cl = (CardLayout) headerCards.getLayout();
+		cl.show(headerCards, "Text");
+		
 		propertyField.setText("");
-		propertyCondition.setSelectedItem(FilterSpecification.FilterCondition.NONE);
+		propertyCondition.setSelectedItem(FilterSpecification.FilterCondition.NONE.getLabel());
 		propertyValue.setText("");
 
-		bodyCondition.setSelectedItem(FilterSpecification.FilterCondition.NONE);
+		bodyCondition.setSelectedItem(FilterSpecification.FilterCondition.NONE.getLabel());
 		bodyValue.setText("");
 	}
 	private void initialPopulate() {

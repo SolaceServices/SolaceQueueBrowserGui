@@ -123,4 +123,8 @@ public class FilterSpecification {
 	public String userPropValue;
 	public String bodyValue;
 	public String getDefaultHeaderFieldSelection() {return "Destination";}
+
+	public boolean isEmpty() {
+		return ((headerCondition == FilterCondition.NONE) && (userPropCondition == FilterCondition.NONE) && (bodyCondition == FilterCondition.NONE));
+	}
 }
