@@ -1,0 +1,12 @@
+{
+	"eventBroker": {
+		"name": "nram-cloud",
+		"sempHost": "https://nram-gke-poc.messaging.solace.cloud:943/SEMP/v2/config",
+		"sempAdminUser": "nram-prod1-admin",
+		"sempAdminPw": "*****",
+		"msgVpnName": "nram-prod1",
+		"messagingHost": "tcps://nram-gke-poc.messaging.solace.cloud:55443",
+		"messagingClientUsername": "solace-cloud-client",
+		"messagingPw" : "*****"
+	}
+}
