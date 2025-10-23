@@ -1,0 +1,12 @@
+{
+	"eventBroker": {
+		"name": "nram localhost",
+		"sempHost": "http://localhost:8088/SEMP/v2/config",
+		"sempAdminUser": "admin",
+		"sempAdminPw": "admin",
+		"msgVpnName": "default",
+		"messagingHost": "tcp://localhost:55333",
+		"messagingClientUsername": "default",
+		"messagingPw" : "default"
+	}
+}

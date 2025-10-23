@@ -1,0 +1,12 @@
+{
+  "eventBroker": {
+    "name": "Local Solace Broker",
+    "sempHost": "http://localhost:8080/SEMP/v2/config",
+    "sempAdminUser": "admin",
+    "sempAdminPw": "admin",
+    "msgVpnName": "default",
+    "messagingHost": "tcp://localhost:55333",
+    "messagingClientUsername": "default",
+    "messagingPw": "default"
+  }
+}
