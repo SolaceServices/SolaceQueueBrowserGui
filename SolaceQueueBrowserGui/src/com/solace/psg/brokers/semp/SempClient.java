@@ -658,7 +658,6 @@ public class SempClient {
 		return rc;
 	}
 	public int getClientCount(String vpn) throws SempException {
-//		/curl -X GET -u mikeTest-admin:8p1sqblhq9feuj3n28mkbdtnn4  https://mr-connection-lt30wl00r51.messaging.solace.cloud:943/SEMP/v2/monitor/msgVpns/mikeTest/clients?select=clientId&count=1
 		String url = fullUrl.replace("config", "monitor");
 		url += "/msgVpns/{msgVpnName}/clients?select=clientId&count=1";
 		url = url.replace("{msgVpnName}", vpn);
